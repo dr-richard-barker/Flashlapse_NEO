@@ -3,7 +3,6 @@ import sys
 import os
 import time
 import subprocess
-import serial
  
 # This gets the Qt stuff
 import PyQt5
@@ -18,6 +17,8 @@ import FlashLapse_UI
 
 #import custom functions
 import Camera
+from neopixel_control import NeoPixelControl
+from Matrix_Control_Widget import MatrixControlWidget
 
 #camera libraries
 from picamera import PiCamera
@@ -50,7 +51,6 @@ average = False
 high = False
 cloud =False
 run_timelapse = True
-ASD = serial.Serial('/dev/ttyACM0', 9600)
 
 class Image(QThread):
     capture = QtCore.pyqtSignal()
@@ -449,108 +449,6 @@ class MainWindow(QMainWindow, FlashLapse_UI.Ui_MainWindow):
             self.Frequency_Average.setEnabled(False)
             self.Frequency_High.setEnabled(False)
 
-    def full_color_change(self):
-        temp = self.Full_Color_Select.currentIndex()
-        if temp == 1:
-            ASD.write(bytes('4', 'UTF-8'))
-            self.Color_Frame.setPixmap(QtGui.QPixmap("../_image/Color_None.png"))
-        elif temp == 2:
-            ASD.write(bytes('1', 'UTF-8'))
-            self.Color_Frame.setPixmap(QtGui.QPixmap("../_image/Color_Red.png"))
-        elif temp == 3:
-            ASD.write(bytes('2', 'UTF-8'))
-            self.Color_Frame.setPixmap(QtGui.QPixmap("../_image/Color_Green.png"))
-        elif temp == 4:
-            ASD.write(bytes('3', 'UTF-8'))
-            self.Color_Frame.setPixmap(QtGui.QPixmap("../_image/Color_Blue.png"))
-        elif temp == 5:
-            ASD.write(bytes('4', 'UTF-8'))
-            self.Color_Frame.setPixmap(QtGui.QPixmap("../_image/Color_Rainbow.png"))
-        else:
-            ASD.write(bytes('0', 'UTF-8'))
-            self.Color_Frame.setPixmap(QtGui.QPixmap("../_image/Color_None.png"))
-
-        self.Half_Left.setPixmap(QtGui.QPixmap("../_image/Color_None_Left.png"))
-        self.Half_Right.setPixmap(QtGui.QPixmap("../_image/Color_None_Right.png"))
-
-    
-    def half_color_change_left(self):
-        temp = self.Left_Select.currentIndex()
-        if temp == 1:
-            ASD.write(bytes('y', 'UTF-8'))
-            self.Half_Left.setPixmap(QtGui.QPixmap("../_image/Color_None_Left.png"))
-        elif temp == 2:
-            ASD.write(bytes('d', 'UTF-8'))
-            self.Half_Left.setPixmap(QtGui.QPixmap("../_image/Color_Red_left.png"))
-        elif temp == 3:
-            ASD.write(bytes('e', 'UTF-8'))
-            self.Half_Left.setPixmap(QtGui.QPixmap("../_image/Color_Red_left.png"))
-        elif temp == 4:
-            ASD.write(bytes('f', 'UTF-8'))
-            self.Half_Left.setPixmap(QtGui.QPixmap("../_image/Color_Red_left.png"))
-        elif temp == 0:
-            ASD.write(bytes('B', 'UTF-8'))
-            self.Half_Left.setPixmap(QtGui.QPixmap("../_image/Color_None_Left.png"))
-
-            self.Color_Frame.setPixmap(QtGui.QPixmap("../_image/Color_None.png"))
-
-    def half_color_change_right(self):
-        temp = self.Right_Select.currentIndex()
-        if temp == 1:
-            ASD.write(bytes('x', 'UTF-8'))
-            self.Half_Right.setPixmap(QtGui.QPixmap("../_image/Color_None_Right.png"))
-        elif temp == 2:
-            ASD.write(bytes('a', 'UTF-8'))
-            self.Half_Right.setPixmap(QtGui.QPixmap("../_image/Color_Red_Right.png"))
-        elif temp == 3:
-            ASD.write(bytes('b', 'UTF-8'))
-            self.Half_Right.setPixmap(QtGui.QPixmap("../_image/Color_Green_Right.png"))
-        elif temp == 4:
-            ASD.write(bytes('c', 'UTF-8'))
-            self.Half_Right.setPixmap(QtGui.QPixmap("../_image/Color_Blue_Right.png"))
-        elif temp == 0:
-            ASD.write(bytes('A', 'UTF-8'))
-            self.Half_Right.setPixmap(QtGui.QPixmap("../_image/Color_None_Right.png"))
-
-        self.Color_Frame.setPixmap(QtGui.QPixmap("../_image/Color_None.png"))
-
-    def gravi_confirm(self):
-        if self.Gravi_Red.isChecked():
-            ASD.write(bytes('g', 'UTF-8'))
-        elif self.Gravi_Green.isChecked():
-            ASD.write(bytes('h', 'UTF-8'))
-        elif self.Gravi_Blue.isChecked():
-            ASD.write(bytes('i', 'UTF-8'))
-        elif self.Gravi_White.isChecked():
-            ASD.write(bytes('j', 'UTF-8'))
-
-
-    def germi_confirm(self):
-        if self.Germi_Red.isChecked():
-            ASD.write(bytes('k', 'UTF-8'))
-        elif self.Germi_Green.isChecked():
-            ASD.write(bytes('l', 'UTF-8'))
-        elif self.Germi_Blue.isChecked():
-            ASD.write(bytes('m', 'UTF-8'))
-        elif self.Germi_White.isChecked():
-            ASD.write(bytes('n', 'UTF-8'))
-
-    def barri_confirm(self):
-        if self.Barri_Red.isChecked():
-            ASD.write(bytes('o', 'UTF-8'))
-        elif self.Barri_Green.isChecked():
-            ASD.write(bytes('p', 'UTF-8'))
-        elif self.Barri_Blue.isChecked():
-            ASD.write(bytes('q', 'UTF-8'))
-        elif self.Barri_White.isChecked():
-            ASD.write(bytes('r', 'UTF-8'))
-            
-    def disco_confirm(self):
-        ASD.write(bytes('s', 'UTF-8'))
-
-    def rotate(self):
-        ASD.write(bytes('z', 'UTF-8'))
-
     def timelapse_change(self):
         global run_timelapse
         if(run_timelapse):
@@ -566,6 +464,14 @@ class MainWindow(QMainWindow, FlashLapse_UI.Ui_MainWindow):
         super(self.__class__, self).__init__()
         self.setupUi(self) # gets defined in the UI file
         self.Check_Network()
+
+        # Initialize the NeoPixel control
+        self.neopixel_control = NeoPixelControl(simulation=True)
+
+        # Create and add the NeoPixel matrix control widget
+        self.matrix_control_widget = MatrixControlWidget(self.neopixel_control)
+        self.Control_Tab.addTab(self.matrix_control_widget, "NeoPixel Control")
+
         self.IST_Editor.editingFinished.connect(lambda: self.IST_Edit())
         self.IST_Editor.textChanged.connect(lambda: self.IST_Change())
         self.ICI_spinBox.valueChanged.connect(lambda: self.ICI_Change())
@@ -576,14 +482,6 @@ class MainWindow(QMainWindow, FlashLapse_UI.Ui_MainWindow):
         self.Start_Imaging.clicked.connect(lambda: self.Begin_Imaging())
         self.Dropbox_Email.textChanged.connect(lambda: self.Email_Change())
         self.Dropbox_Confirm.clicked.connect(lambda: self.Email_Entered())
-        self.Full_Color_Select.currentIndexChanged.connect(lambda: self.full_color_change())
-        self.Left_Select.currentIndexChanged.connect(lambda: self.half_color_change_left())
-        self.Right_Select.currentIndexChanged.connect(lambda: self.half_color_change_right())
-        self.Gravi_Confirm.clicked.connect(lambda: self.gravi_confirm())
-        self.Germi_Confirm.clicked.connect(lambda: self.germi_confirm())
-        self.Barrier_Confirm.clicked.connect(lambda: self.barri_confirm())
-        self.Disco.clicked.connect(lambda: self.disco_confirm())
-        self.Rotate.clicked.connect(lambda: self.rotate())
         self.Timelapse.clicked.connect(lambda: self.timelapse_change())
 
 # I feel better having one of these
