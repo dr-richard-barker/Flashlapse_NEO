@@ -1,10 +1,38 @@
+# This configuration file is for Gitpod, a cloud-based development environment.
+# It sets up a virtual desktop environment to run the PyQt5 GUI application.
+
 tasks:
-  - init: pip install -r requirements.txt
+  - name: Setup VNC and run application
+    before:
+      # Install a lightweight desktop environment (fluxbox) and a VNC server (x11vnc).
+      # This command runs only when the workspace is first created.
+      sudo apt-get update
+      sudo apt-get install -y xvfb fluxbox x11vnc
+    init:
+      # Install python dependencies from requirements.txt.
+      # This command runs on every workspace start.
+      pip install -r requirements.txt
+    command:
+      # This command runs when the workspace is opened.
+      # It starts a virtual display, the window manager, the VNC server,
+      # and finally the Python application.
+      Xvfb :1 -screen 0 1280x800x24 &
+      sleep 2
+      fluxbox -display :1 &
+      sleep 2
+      x11vnc -display :1 -nopw -listen localhost -forever -xkb &
+      sleep 2
+      DISPLAY=:1 python3 _python/Main.py
+
+# Expose the port for the noVNC web client.
+# Gitpod will automatically detect this and provide a button to open it in a browser.
 ports:
   - port: 5900
     onOpen: ignore
   - port: 6080
     onOpen: open-browser
+
+# Suggest the Python extension for VS Code.
 vscode:
   extensions:
     - ms-python.python
